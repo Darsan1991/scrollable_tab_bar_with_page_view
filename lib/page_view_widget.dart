@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:scrollable_tab_layout/page_indicator_painter.dart';
 
@@ -19,6 +21,7 @@ class PageViewWidgetState extends State<PageViewWidget>
   TabController _tabController;
   bool _scrolling = false;
   double page = 0;
+  bool _hasScrollerListenerAdded = false;
 
   @override
   void initState() {
@@ -36,27 +39,38 @@ class PageViewWidgetState extends State<PageViewWidget>
     });
 
     _controller.addListener(() {
-      // _controller.
+      _addScrollerListerIfNotAlreay();
 
       if ((_controller.page.round() - _controller.page).abs() < 0.05 ||
-          (_controller.page.round() - _controller.page).abs() > 1)
-        _tabController.index = _controller.page.round();
-
+          (_controller.page.round() - _controller.page).abs() >= 1) {
+        if (!_tabController.indexIsChanging)
+          _tabController.index = _controller.page.round();
+      }
       setState(() {
         this.page = _controller.page;
       });
-
-      _tabController.offset = _controller.page - _tabController.index;
+      if (!_tabController.indexIsChanging)
+        _tabController.offset =
+            max(min(_controller.page - _tabController.index, 1), -1);
     });
 
-    Future.delayed(const Duration(seconds: 1), () {
-      _controller.position.isScrollingNotifier.addListener(() {
-        _scrolling = _controller.position.isScrollingNotifier.value;
-        print("Scrolling ${this._scrolling}");
-        // if (!_controller.position.isScrollingNotifier.value)
-        //   _tabController.index = _controller.page.round();
-      });
+    // Future.delayed(const Duration(seconds: 1), () {
+    //   _controller.position.isScrollingNotifier.addListener(() {
+    //     _scrolling = _controller.position.isScrollingNotifier.value;
+    //   });
+    // });
+  }
+
+  void _addScrollerListerIfNotAlreay() {
+    if (_hasScrollerListenerAdded) return;
+    _scrolling = _controller.position.isScrollingNotifier.value;
+    _controller.position.isScrollingNotifier.addListener(() {
+      _scrolling = _controller.position.isScrollingNotifier.value;
+      // print("Scrolling ${this._scrolling}");
+      // if (!_controller.position.isScrollingNotifier.value)
+      //   _tabController.index = _controller.page.round();
     });
+    _hasScrollerListenerAdded = true;
   }
 
   @override
@@ -68,8 +82,6 @@ class PageViewWidgetState extends State<PageViewWidget>
 
   @override
   Widget build(BuildContext context) {
-    print("Size:" + MediaQuery.of(context).size.width.toString());
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[

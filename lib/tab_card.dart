@@ -32,22 +32,32 @@ class TabCardState extends State<TabCard> {
   double batteryLevel = 0;
 
   DateTime _time;
+  Timer _timer;
+  bool _disposed = false;
 
   @override
   void initState() {
     super.initState();
     widget.battery.batteryLevel.then((lvl) {
+      if (_disposed) return;
       setState(() {
         batteryLevel = lvl / 100.0;
       });
     });
 
     _time = DateTime.now();
-    Timer.periodic(Duration(seconds: 1), (timer) {
+    _timer = Timer.periodic(Duration(seconds: 1), (timer) {
       setState(() {
         _time = DateTime.now();
       });
     });
+  }
+
+  @override
+  void dispose() {
+    _disposed = true;
+    _timer.cancel();
+    super.dispose();
   }
 
   @override
